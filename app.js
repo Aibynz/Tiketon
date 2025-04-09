@@ -1,24 +1,24 @@
 let tg = window.Telegram.WebApp;
 tg.expand();
 
+// 👇 ВСТАВЬ СЮДА свой actual Google Script URL:
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJOoaLJEA8NykMEGmc8fJ45CuiGYeDAimSqddLUh2_GGUPod8otfrXK6t9XyffxZpmbg/exec";
+
 const events = [
   {
     id: 1,
     title: "«Абай» операсы",
-    place: "С.Сейфуллин атындағы қазақ драма театры",
-    image: ""
+    place: "С.Сейфуллин атындағы қазақ драма театры"
   },
   {
     id: 2,
     title: "Ерлан Көкеев концерті",
-    place: "Орталық концерт залы",
-    image: ""
+    place: "Орталық концерт залы"
   },
   {
     id: 3,
     title: "«Қыз Жібек» спектаклі",
-    place: "Жастар театры",
-    image: ""
+    place: "Жастар театры"
   }
 ];
 
@@ -37,6 +37,7 @@ let selectedEvent = null;
 let selectedSeats = [];
 let selectedDate = "";
 let selectedTime = "16:00";
+let bookedSeats = [];
 
 const eventList = document.getElementById("eventList");
 const bookingSection = document.getElementById("bookingSection");
@@ -65,6 +66,7 @@ events.forEach(ev => {
 function selectEvent(id) {
   selectedEvent = events.find(e => e.id === id);
   selectedSeats = [];
+  bookedSeats = [];
   eventTitle.textContent = selectedEvent.title + " | " + selectedEvent.place;
   bookingSection.classList.remove("hidden");
 
@@ -78,11 +80,34 @@ function selectEvent(id) {
   });
   selectedDate = dateList[0];
 
-  drawSeatMap();
+  fetchBookedSeats(); // Загрузим занятые места
 }
 
-dateSelect.onchange = () => selectedDate = dateSelect.value;
-timeSelect.onchange = () => selectedTime = timeSelect.value;
+dateSelect.onchange = () => {
+  selectedDate = dateSelect.value;
+  fetchBookedSeats();
+};
+timeSelect.onchange = () => {
+  selectedTime = timeSelect.value;
+  fetchBookedSeats();
+};
+
+function fetchBookedSeats() {
+  if (!selectedEvent || !selectedDate || !selectedTime) return;
+
+  const url = `${GOOGLE_SCRIPT_URL}?title=${encodeURIComponent(selectedEvent.title)}&date=${selectedDate}&time=${selectedTime}`;
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      bookedSeats = data.booked || [];
+      drawSeatMap();
+    })
+    .catch(err => {
+      console.error("Ошибка при получении занятых мест:", err);
+      bookedSeats = [];
+      drawSeatMap();
+    });
+}
 
 function drawSeatMap() {
   seatTable.innerHTML = "";
@@ -97,8 +122,14 @@ function drawSeatMap() {
       const seatId = `${row}-қатар ${col}-орын`;
       const td = document.createElement("td");
       td.textContent = col;
-      td.className = "p-2 border cursor-pointer bg-gray-100 hover:bg-green-300 text-sm";
-      td.onclick = () => toggleSeat(td, seatId);
+
+      if (bookedSeats.includes(seatId)) {
+        td.className = "p-2 border bg-red-200 text-gray-500 text-sm cursor-not-allowed";
+      } else {
+        td.className = "p-2 border cursor-pointer bg-gray-100 hover:bg-green-300 text-sm";
+        td.onclick = () => toggleSeat(td, seatId);
+      }
+
       tr.appendChild(td);
     }
     seatTable.appendChild(tr);
