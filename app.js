@@ -1,89 +1,73 @@
 let tg = window.Telegram.WebApp;
 tg.expand();
 
-const container = document.querySelector('.container');
-const cartElement = document.getElementById('cart');
-
-let cart = {};
-
 const events = [
-  { id: 1, name: "Концерт The Beatles", date: "25 фев", venue: "Театр Армана", price: 5000, image: "beatles.jpg" },
-  { id: 2, name: "Лебединое озеро", date: "10 мар", venue: "Городской театр", price: 7000, image: "swanlake.jpg" }
+  { id: 1, title: "Концерт симфонического оркестра", place: "ГАТОБ", date: "2025-05-12" },
+  { id: 2, title: "Театр: Евгений Онегин", place: "Драматический театр", date: "2025-05-15" },
+  { id: 3, title: "Jazz Night", place: "Philharmonia", date: "2025-05-20" }
 ];
 
-function renderEvents() {
-  container.innerHTML = "";
-  events.forEach(event => {
-    const itemDiv = document.createElement('div');
-    itemDiv.className = "item";
-    itemDiv.innerHTML = \`
-      <img src="\${event.image}" class="img" />
-      <p><strong>\${event.name}</strong></p>
-      <p>\${event.date} - \${event.venue}</p>
-      <p>\${event.price} KZT</p>
-      <button class="btn select-event" data-id="\${event.id}">Выбрать</button>
-    \`;
-    container.appendChild(itemDiv);
-  });
-}
+let selectedEvent = null;
+let selectedSeats = [];
 
-container.addEventListener('click', e => {
-  if (e.target.classList.contains('select-event')) {
-    const eventId = parseInt(e.target.dataset.id);
-    showSeatSelection(eventId);
-  } else if (e.target.classList.contains('seat')) {
-    const eventId = parseInt(e.target.dataset.event);
-    const seat = e.target.dataset.seat;
-    cart[eventId] = cart[eventId] || [];
-    if (cart[eventId].includes(seat)) {
-      cart[eventId] = cart[eventId].filter(s => s !== seat);
-      e.target.classList.remove('selected');
-    } else {
-      cart[eventId].push(seat);
-      e.target.classList.add('selected');
-    }
-    updateCart();
-    updateMainButton();
-  }
+const eventList = document.getElementById("eventList");
+const bookingSection = document.getElementById("bookingSection");
+const eventTitle = document.getElementById("eventTitle");
+const seatGrid = document.getElementById("seats");
+const confirmBtn = document.getElementById("confirmBtn");
+
+events.forEach(ev => {
+  const card = document.createElement("div");
+  card.className = "bg-white p-4 shadow rounded hover:bg-blue-50 cursor-pointer";
+  card.innerHTML = `
+    <h3 class="text-lg font-semibold">${ev.title}</h3>
+    <p class="text-sm text-gray-600">${ev.place} — ${ev.date}</p>
+  `;
+  card.onclick = () => selectEvent(ev);
+  eventList.appendChild(card);
 });
 
-function showSeatSelection(eventId) {
-  const event = events.find(e => e.id === eventId);
-  container.innerHTML = \`<h3>\${event.name} — Выберите места</h3>\`;
-  for (let i = 1; i <= 10; i++) {
-    const btn = document.createElement('button');
-    btn.className = "btn seat";
-    btn.dataset.event = eventId;
+function selectEvent(ev) {
+  selectedEvent = ev;
+  selectedSeats = [];
+  eventTitle.textContent = ev.title + " — " + ev.date;
+  seatGrid.innerHTML = "";
+  bookingSection.classList.remove("hidden");
+
+  for (let i = 1; i <= 25; i++) {
+    const btn = document.createElement("button");
+    btn.className = "bg-gray-200 hover:bg-green-400 p-2 rounded";
+    btn.textContent = `Место ${i}`;
     btn.dataset.seat = i;
-    btn.innerText = "Место " + i;
-    container.appendChild(btn);
+    btn.onclick = () => toggleSeat(btn, i);
+    seatGrid.appendChild(btn);
   }
 }
 
-function updateCart() {
-  cartElement.innerHTML = "<h4>Выбранные места:</h4>";
-  let total = 0;
-  for (const eventId in cart) {
-    const event = events.find(e => e.id == eventId);
-    const seats = cart[eventId];
-    total += seats.length * event.price;
-    cartElement.innerHTML += \`<p>\${event.name}: \${seats.join(', ')} (\${event.price * seats.length} KZT)</p>\`;
-  }
-  cartElement.innerHTML += \`<p><strong>Итого: \${total} KZT</strong></p>\`;
-}
-
-function updateMainButton() {
-  if (Object.keys(cart).length > 0) {
-    tg.MainButton.setText("Забронировать");
-    tg.MainButton.show();
-    tg.MainButton.onClick(() => {
-      tg.sendData(JSON.stringify(cart));
-    });
+function toggleSeat(button, seat) {
+  const index = selectedSeats.indexOf(seat);
+  if (index > -1) {
+    selectedSeats.splice(index, 1);
+    button.classList.remove("bg-green-500");
+    button.classList.add("bg-gray-200");
   } else {
-    tg.MainButton.hide();
+    selectedSeats.push(seat);
+    button.classList.remove("bg-gray-200");
+    button.classList.add("bg-green-500");
   }
 }
 
-tg.ready(() => {
-  renderEvents();
-});
+confirmBtn.onclick = () => {
+  if (!selectedEvent || selectedSeats.length === 0) {
+    alert("Выберите хотя бы одно место");
+    return;
+  }
+
+  const data = {
+    event: selectedEvent,
+    seats: selectedSeats
+  };
+
+  tg.sendData(JSON.stringify(data));
+  tg.close();
+};
