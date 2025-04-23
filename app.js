@@ -149,19 +149,37 @@ function toggleSeat(td, seatId) {
   }
 }
 
-confirmBtn.onclick = () => {
+confirmBtn.onclick = async () => {
   if (!selectedEvent || selectedSeats.length === 0) {
     alert("Кемінде бір орынды таңдаңыз");
     return;
   }
 
-  const data = {
-    event: selectedEvent,
-    seats: selectedSeats,
-    date: selectedDate,
-    time: selectedTime
-  };
+  // Ещё раз получаем актуальный список занятых мест
+  try {
+    const res = await fetch(
+      `${GOOGLE_SCRIPT_URL}?title=${encodeURIComponent(selectedEvent.title)}&date=${selectedDate}&time=${selectedTime}`
+    );
+    const json = await res.json();
+    const nowBooked = json.booked || [];
+    // находим пересечения
+    const conflicts = selectedSeats.filter(s => nowBooked.includes(s));
+    if (conflicts.length) {
+      alert(
+        "Өкінішке орай, мына орындар қазір бос емес:\n" +
+        conflicts.join(", ")
+      );
+      fetchBookedSeats();  // перерисуем схему под новую реальность
+      return;
+    }
+  } catch (err) {
+    console.error("Ошибка при проверке занятости:", err);
+    alert("Қате! Қайта әрекет етуге тырысыңыз.");
+    return;
+  }
 
+  // Если все свободно — отправляем в бот
+  const data = { event: selectedEvent, seats: selectedSeats, date: selectedDate, time: selectedTime };
   tg.sendData(JSON.stringify(data));
   tg.close();
 };
