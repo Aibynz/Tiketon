@@ -1,0 +1,5 @@
+BOT_TOKEN = "7264396745:AAHsCyJgJRk1oI5lc7WGa7A2QYy9pPL7ZkU"
+PAYMENT_TOKEN = "2051251535:TEST:OTk5MDA4ODgxLTAwNQ"
+WEBAPP_URL = "https://aibynz.github.io/Tiketon/"
+GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxTsS8QZKDhr3zeP3AUGIjb82wPdWjpUCTX-iVcFqRmEFLGP0VWKqEGKI_IQFPEylJCtw/exec"
+DATABASE_URL = "postgresql://postgres:Nokia2050@db.hplcynndkdteypswcivf.supabase.co:5432/postgres"
