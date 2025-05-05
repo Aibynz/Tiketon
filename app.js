@@ -5,29 +5,65 @@ document.addEventListener("DOMContentLoaded", async () => {
   const dateSelect = document.getElementById("dateSelect");
   const timeSelect = document.getElementById("timeSelect");
   const confirmBtn = document.getElementById("confirmBtn");
-  const seatTable = document.getElementById("seatTable");
+  const seatTable = document.getElementById("seatTable").querySelector("tbody");
+
+  const poster = document.getElementById("eventPoster");
+  const posterContainer = document.getElementById("posterContainer");
+  const formSection = document.getElementById("formSection");
 
   let selectedEvent = null;
   let selectedSeats = [];
 
-  // 🎭 Іс-шара таңдау
+  // 🔘 Іс-шара таңдалған кезде
   document.querySelectorAll(".event-button").forEach((btn) => {
-    btn.addEventListener("click", () => {
+    btn.addEventListener("click", async () => {
+      // Актив кластарын тазалау
+      document.querySelectorAll(".event-button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
       selectedEvent = {
         title: btn.dataset.title,
         place: btn.dataset.place
       };
 
-      // Таңдалған батырма көрнекі болу үшін
-      document.querySelectorAll(".event-button").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
+      // 📸 Суретті көрсету
+      const imagePath = btn.dataset.img;
+      poster.src = imagePath;
+      posterContainer.style.display = "block";
+
+      // 👇 Форманы көрсету
+      formSection.style.display = "block";
+
+      // ♻️ Орын таңдауды қайта бастау
+      selectedSeats = [];
+      seatTable.innerHTML = "";
+
+      for (let row = 1; row <= 10; row++) {
+        const tr = document.createElement("tr");
+        const rowLabel = document.createElement("td");
+        rowLabel.innerText = `${row}-қатар`;
+        tr.appendChild(rowLabel);
+
+        for (let col = 1; col <= 10; col++) {
+          const td = document.createElement("td");
+          const btn = document.createElement("button");
+          btn.classList.add("seat");
+          btn.dataset.seat = `${row}-қатар ${col}-орын`;
+          btn.innerText = col;
+          td.appendChild(btn);
+          tr.appendChild(td);
+        }
+        seatTable.appendChild(tr);
+      }
+
+      await fetchBookedSeats(); // 🔴 брондалған орындарды белгілеу
     });
   });
 
-  // 🔴 Броньдалған орындарды алу
+  // 🔴 Брондалған орындарды алу
   async function fetchBookedSeats() {
     try {
-      const res = await fetch("http://localhost:8000/booked-seats"); // ⚠️ Мынау сервер адрес
+      const res = await fetch("http://localhost:8000/booked-seats"); // немесе production URL
       const data = await res.json();
 
       const currentDate = dateSelect.value;
@@ -50,7 +86,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       });
     } catch (err) {
-      console.error("⚠️ fetchBookedSeats error:", err);
+      console.error("⚠️ fetchBookedSeats қатесі:", err);
     }
   }
 
@@ -68,7 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 📩 Брондау батырмасы
+  // 📩 Жіберу
   confirmBtn.addEventListener("click", () => {
     const selectedDate = dateSelect.value;
     const selectedTime = timeSelect.value;
@@ -85,7 +121,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       time: selectedTime
     };
 
-    console.log("➡️ Жіберілуде:", data);
     try {
       tg.sendData(JSON.stringify(data));
     } catch (e) {
