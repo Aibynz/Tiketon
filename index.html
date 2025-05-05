@@ -29,21 +29,34 @@
     </label>
 
     <h3>Орын таңдаңыз:</h3>
-    <div id="seatTable" class="seat-grid">
-      <!-- 10 қатар * 10 орын -->
-      <table>
-        <tbody>
-          ${[...Array(10)].map((_, row) => `
-            <tr>
-              <td>${row + 1}-қатар</td>
-              ${[...Array(10)].map((_, col) => `
-                <td><button class="seat" data-seat="${row + 1}-қатар ${col + 1}-орын">${col + 1}</button></td>
-              `).join("")}
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    </div>
+    <table id="seatTable">
+      <tbody>
+        <!-- 10 қатар x 10 орын -->
+        <!-- әр қатар үшін -->
+        <script>
+          document.addEventListener("DOMContentLoaded", () => {
+            const seatTable = document.getElementById("seatTable").querySelector("tbody");
+            for (let row = 1; row <= 10; row++) {
+              const tr = document.createElement("tr");
+              const rowLabel = document.createElement("td");
+              rowLabel.innerText = `${row}-қатар`;
+              tr.appendChild(rowLabel);
+
+              for (let col = 1; col <= 10; col++) {
+                const td = document.createElement("td");
+                const btn = document.createElement("button");
+                btn.classList.add("seat");
+                btn.dataset.seat = `${row}-қатар ${col}-орын`;
+                btn.innerText = col;
+                td.appendChild(btn);
+                tr.appendChild(td);
+              }
+              seatTable.appendChild(tr);
+            }
+          });
+        </script>
+      </tbody>
+    </table>
 
     <button id="confirmBtn" class="confirm-btn">📩 Брондау</button>
   </div>
