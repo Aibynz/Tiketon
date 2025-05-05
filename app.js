@@ -7,17 +7,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   const confirmBtn = document.getElementById("confirmBtn");
   const seatTable = document.getElementById("seatTable");
 
-  let selectedEvent = {
-    title: document.getElementById("eventTitle")?.innerText || "Бос атау",
-    place: "Қарағанды Театры"
-  };
-
+  let selectedEvent = null;
   let selectedSeats = [];
 
-  // ✅ Жүктелген кезде — базаға сұраныс
+  // 🎭 Іс-шара таңдау
+  document.querySelectorAll(".event-button").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedEvent = {
+        title: btn.dataset.title,
+        place: btn.dataset.place
+      };
+
+      // Таңдалған батырма көрнекі болу үшін
+      document.querySelectorAll(".event-button").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
+  // 🔴 Броньдалған орындарды алу
   async function fetchBookedSeats() {
     try {
-      const res = await fetch("http://localhost:8000/booked-seats"); // 🔁 production-да URL ауыстыру керек
+      const res = await fetch("http://localhost:8000/booked-seats"); // ⚠️ Мынау сервер адрес
       const data = await res.json();
 
       const currentDate = dateSelect.value;
@@ -25,7 +35,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const allBookedSeats = data
         .filter(b =>
-          b.event === selectedEvent.title &&
+          b.event === selectedEvent?.title &&
           b.date === currentDate &&
           b.time === currentTime &&
           (b.status === "Оплачено" || b.status === "❌ Уақыт өтті")
@@ -40,18 +50,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       });
     } catch (err) {
-      console.error("🔴 fetchBookedSeats қатесі:", err);
+      console.error("⚠️ fetchBookedSeats error:", err);
     }
   }
 
-  await fetchBookedSeats();
-
-  // 🎫 орын таңдау
+  // 💺 Орын таңдауы
   seatTable.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON" && !e.target.disabled) {
+    if (e.target.classList.contains("seat") && !e.target.disabled) {
       const seat = e.target.dataset.seat;
       if (selectedSeats.includes(seat)) {
-        selectedSeats = selectedSeats.filter((s) => s !== seat);
+        selectedSeats = selectedSeats.filter(s => s !== seat);
         e.target.classList.remove("selected");
       } else {
         selectedSeats.push(seat);
@@ -60,13 +68,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // 📤 sendData
+  // 📩 Брондау батырмасы
   confirmBtn.addEventListener("click", () => {
     const selectedDate = dateSelect.value;
     const selectedTime = timeSelect.value;
 
-    if (!selectedEvent.title || !selectedEvent.place || selectedSeats.length === 0) {
-      alert("Барлық деректерді толтырыңыз!");
+    if (!selectedEvent || selectedSeats.length === 0) {
+      alert("Іс-шара мен орын таңдаңыз!");
       return;
     }
 
@@ -77,12 +85,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       time: selectedTime
     };
 
-    console.log("➡️ Жіберіліп жатыр:", data);
-
+    console.log("➡️ Жіберілуде:", data);
     try {
       tg.sendData(JSON.stringify(data));
     } catch (e) {
-      alert("❌ Қате жіберілгенде: " + e);
+      alert("Қате: " + e.message);
     }
   });
 });
