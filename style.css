@@ -1,0 +1,19 @@
+.seat {
+  padding: 10px;
+  background-color: #ddd;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.seat.selected {
+  background-color: #3498db;
+  color: white;
+}
+
+.seat.booked {
+  background-color: #e74c3c;
+  color: white;
+  cursor: not-allowed;
+}
