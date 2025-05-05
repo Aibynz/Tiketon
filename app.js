@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   const tg = window.Telegram.WebApp;
   tg.expand();
 
@@ -14,8 +14,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let selectedSeats = [];
 
+  // ✅ Жүктелген кезде — базаға сұраныс
+  async function fetchBookedSeats() {
+    try {
+      const res = await fetch("http://localhost:8000/booked-seats"); // 🔁 production-да URL ауыстыру керек
+      const data = await res.json();
+
+      const currentDate = dateSelect.value;
+      const currentTime = timeSelect.value;
+
+      const allBookedSeats = data
+        .filter(b =>
+          b.event === selectedEvent.title &&
+          b.date === currentDate &&
+          b.time === currentTime &&
+          (b.status === "Оплачено" || b.status === "❌ Уақыт өтті")
+        )
+        .flatMap(b => b.seats);
+
+      document.querySelectorAll(".seat").forEach(btn => {
+        const seat = btn.dataset.seat;
+        if (allBookedSeats.includes(seat)) {
+          btn.disabled = true;
+          btn.classList.add("booked");
+        }
+      });
+    } catch (err) {
+      console.error("🔴 fetchBookedSeats қатесі:", err);
+    }
+  }
+
+  await fetchBookedSeats();
+
+  // 🎫 орын таңдау
   seatTable.addEventListener("click", (e) => {
-    if (e.target.tagName === "BUTTON") {
+    if (e.target.tagName === "BUTTON" && !e.target.disabled) {
       const seat = e.target.dataset.seat;
       if (selectedSeats.includes(seat)) {
         selectedSeats = selectedSeats.filter((s) => s !== seat);
@@ -27,6 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // 📤 sendData
   confirmBtn.addEventListener("click", () => {
     const selectedDate = dateSelect.value;
     const selectedTime = timeSelect.value;
@@ -43,12 +77,12 @@ document.addEventListener("DOMContentLoaded", () => {
       time: selectedTime
     };
 
-    console.log("Жіберіліп жатыр:", data);
+    console.log("➡️ Жіберіліп жатыр:", data);
 
     try {
       tg.sendData(JSON.stringify(data));
     } catch (e) {
-      alert("❌ Қате жібергенде: " + e);
+      alert("❌ Қате жіберілгенде: " + e);
     }
   });
 });
