@@ -1,10 +1,45 @@
+body {
+  font-family: sans-serif;
+  text-align: center;
+  padding: 20px;
+}
+
+h1 {
+  font-size: 24px;
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+.event-button {
+  margin: 10px;
+  padding: 12px 20px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.form-section {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.seat-grid table {
+  margin: 10px auto;
+  border-collapse: collapse;
+}
+
+.seat-grid td {
+  padding: 5px;
+}
+
 .seat {
   padding: 10px;
-  background-color: #ddd;
-  border: 1px solid #ccc;
   border-radius: 6px;
+  border: none;
+  background-color: #eee;
   cursor: pointer;
-  transition: 0.2s;
 }
 
 .seat.selected {
@@ -16,4 +51,15 @@
   background-color: #e74c3c;
   color: white;
   cursor: not-allowed;
+}
+
+.confirm-btn {
+  margin-top: 20px;
+  background-color: #2980b9;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
 }
