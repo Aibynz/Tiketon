@@ -1,7 +1,8 @@
 body {
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
   text-align: center;
   padding: 20px;
+  background-color: #fff;
 }
 
 h1 {
@@ -10,34 +11,58 @@ h1 {
   margin-bottom: 20px;
 }
 
+.events {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
 .event-button {
-  margin: 10px;
-  padding: 12px 20px;
+  padding: 12px 18px;
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
+  font-size: 16px;
   cursor: pointer;
+  transition: 0.2s;
+}
+
+.event-button:hover {
+  background-color: #2980b9;
 }
 
 .form-section {
   margin-top: 20px;
   text-align: left;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
-.seat-grid table {
-  margin: 10px auto;
+label {
+  display: block;
+  margin: 10px 0;
+  font-weight: bold;
+}
+
+#seatTable {
+  width: 100%;
   border-collapse: collapse;
+  margin-top: 10px;
 }
 
-.seat-grid td {
-  padding: 5px;
+#seatTable td {
+  padding: 4px;
+  text-align: center;
 }
 
 .seat {
-  padding: 10px;
-  border-radius: 6px;
+  padding: 8px 10px;
   border: none;
+  border-radius: 6px;
   background-color: #eee;
   cursor: pointer;
 }
@@ -55,11 +80,11 @@ h1 {
 
 .confirm-btn {
   margin-top: 20px;
-  background-color: #2980b9;
-  color: white;
   padding: 12px 24px;
+  background-color: #27ae60;
+  color: white;
+  font-size: 16px;
   border: none;
   border-radius: 8px;
-  font-size: 16px;
   cursor: pointer;
 }
