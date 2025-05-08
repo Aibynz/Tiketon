@@ -1,4 +1,0 @@
-aiogram==3.2
-asyncpg
-fastapi
-uvicorn
