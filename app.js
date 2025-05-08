@@ -80,7 +80,7 @@ function selectEvent(id) {
   });
   selectedDate = dateList[0];
 
-  fetchBookedSeats(); // Загрузим занятые места
+  fetchBookedSeats();
 }
 
 dateSelect.onchange = () => {
@@ -163,5 +163,18 @@ confirmBtn.onclick = () => {
   };
 
   tg.sendData(JSON.stringify(data));
-  tg.close();
+
+  // Создаем кнопку оплаты
+  const payBtn = document.createElement("button");
+  payBtn.textContent = "💳 Оплатить";
+  payBtn.className = "w-full mt-4 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 font-semibold text-lg transition";
+  payBtn.onclick = () => {
+    tg.MainButton.text = "Оплатить";
+    tg.MainButton.show();
+    tg.MainButton.onClick(() => {
+      tg.sendData(JSON.stringify({ command: "buy" }));
+    });
+  };
+
+  bookingSection.appendChild(payBtn);
 };
