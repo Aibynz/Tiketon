@@ -57,7 +57,7 @@ events.forEach(ev => {
     <div class="p-4">
       <h3 class="text-lg font-bold text-blue-800">${ev.title}</h3>
       <p class="text-sm text-gray-600">${ev.place}</p>
-      <img src="${ev.image || 'https://via.placeholder.com/150'}" alt="${ev.title}" class="w-full h-32 object-cover rounded mb-3">
+      <img src="${ev.image || 'https://via.placeholder.com/150'}" alt="${ev.title}" class="w-full h-auto object-cover rounded mb-3">
       <button class="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         onclick="selectEvent(${ev.id})">
         Таңдау
