@@ -8,17 +8,20 @@ const events = [
   {
     id: 1,
     title: "«Абай» операсы",
-    place: "С.Сейфуллин атындағы қазақ драма театры"
+    place: "С.Сейфуллин атындағы қазақ драма театры",
+    image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image1.jpg"
   },
   {
     id: 2,
     title: "Ерлан Көкеев концерті",
-    place: "Орталық концерт залы"
+    place: "Орталық концерт залы",
+    image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image2.jpg"
   },
   {
     id: 3,
     title: "«Қыз Жібек» спектаклі",
-    place: "Жастар театры"
+    place: "Жастар театры",
+    image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image3.jpg"
   }
 ];
 
@@ -54,6 +57,7 @@ events.forEach(ev => {
     <div class="p-4">
       <h3 class="text-lg font-bold text-blue-800">${ev.title}</h3>
       <p class="text-sm text-gray-600">${ev.place}</p>
+      <img src="${ev.image || 'https://via.placeholder.com/150'}" alt="${ev.title}" class="w-full h-32 object-cover rounded mb-3">
       <button class="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
         onclick="selectEvent(${ev.id})">
         Таңдау
@@ -163,18 +167,4 @@ confirmBtn.onclick = () => {
   };
 
   tg.sendData(JSON.stringify(data));
-
-  // Создаем кнопку оплаты
-  const payBtn = document.createElement("button");
-  payBtn.textContent = "💳 Оплатить";
-  payBtn.className = "w-full mt-4 bg-green-600 text-white py-3 rounded-xl hover:bg-green-700 font-semibold text-lg transition";
-  payBtn.onclick = () => {
-    tg.MainButton.text = "Оплатить";
-    tg.MainButton.show();
-    tg.MainButton.onClick(() => {
-      tg.sendData(JSON.stringify({ command: "buy" }));
-    });
-  };
-
-  bookingSection.appendChild(payBtn);
 };
