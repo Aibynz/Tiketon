@@ -14,9 +14,9 @@ if (tg) {
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqIxSIz5b-SjlMW3ZW4MSJTE5SRynLEruoodLvTYEhZYoq8ECpj3XiQ9_5OnjSiFhk/exec";
 
 const events = [
-  { id: 1, title: "«Абай» операсы", place: "С.Сейфуллин атындағы қазақ драма театры", image: "https://via.placeholder.com/400x200/CCCCCC/000000?text=Абай%20Операсы" }, // Плейсхолдер
-  { id: 2, title: "Ерлан Көкеев концерті", place: "Орталық концерт залы", image: "https://via.placeholder.com/400x200/CCCCCC/000000?text=Ерлан%20Көкеев" }, // Плейсхолдер
-  { id: 3, title: "«Қыз Жібек» спектаклі", place: "Жастар театры", image: "https://via.placeholder.com/400x200/CCCCCC/000000?text=Қыз%20Жібек" }      // Плейсхолдер
+  { id: 1, title: "«Абай» операсы", place: "С.Сейфуллин атындағы қазақ драма театры", image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image1.jpg" }, // Плейсхолдер
+  { id: 2, title: "Ерлан Көкеев концерті", place: "Орталық концерт залы", image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image2.jpg" }, // Плейсхолдер
+  { id: 3, title: "«Қыз Жібек» спектаклі", place: "Жастар театры", image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image3.jpg" }      // Плейсхолдер
 ];
 console.log("app.js: Массив events определен:", events);
 
