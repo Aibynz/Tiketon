@@ -1,28 +1,13 @@
+// app.js
 let tg = window.Telegram.WebApp;
 tg.expand();
 
-// 👇 ВСТАВЬ СЮДА свой actual Google Script URL:
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyJOoaLJEA8NykMEGmc8fJ45CuiGYeDAimSqddLUh2_GGUPod8otfrXK6t9XyffxZpmbg/exec";
 
 const events = [
-  {
-    id: 1,
-    title: "«Абай» операсы",
-    place: "С.Сейфуллин атындағы қазақ драма театры",
-    image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image1.jpg"
-  },
-  {
-    id: 2,
-    title: "Ерлан Көкеев концерті",
-    place: "Орталық концерт залы",
-    image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image2.jpg"
-  },
-  {
-    id: 3,
-    title: "«Қыз Жібек» спектаклі",
-    place: "Жастар театры",
-    image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image3.jpg"
-  }
+  { id: 1, title: "«Абай» операсы", place: "С.Сейфуллин атындағы қазақ драма театры", image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image1.jpg" },
+  { id: 2, title: "Ерлан Көкеев концерті", place: "Орталық концерт залы", image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image2.jpg" },
+  { id: 3, title: "«Қыз Жібек» спектаклі", place: "Жастар театры", image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image3.jpg" }
 ];
 
 const dateList = (() => {
@@ -42,129 +27,271 @@ let selectedDate = "";
 let selectedTime = "16:00";
 let bookedSeats = [];
 
-const eventList = document.getElementById("eventList");
-const bookingSection = document.getElementById("bookingSection");
-const eventTitle = document.getElementById("eventTitle");
-const seatTable = document.querySelector("#seatTable tbody");
-const confirmBtn = document.getElementById("confirmBtn");
+const eventListDiv = document.getElementById("eventList");
+const bookingSectionDiv = document.getElementById("bookingSection");
+const eventTitleH2 = document.getElementById("eventTitle");
+const seatTableBody = document.querySelector("#seatTable tbody");
+const confirmBtn = document.getElementById("confirmBtn"); // Эта кнопка используется в HTML
 const dateSelect = document.getElementById("dateSelect");
 const timeSelect = document.getElementById("timeSelect");
+const selectedSeatsListSpan = document.getElementById("selectedSeatsList");
+const selectedSeatsCountSpan = document.getElementById("selectedSeatsCount");
+const backToEventsBtn = document.getElementById("backToEventsBtn");
 
-events.forEach(ev => {
-  const card = document.createElement("div");
-  card.className = "bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition";
-  card.innerHTML = `
-    <div class="p-4">
-      <h3 class="text-lg font-bold text-blue-800">${ev.title}</h3>
-      <p class="text-sm text-gray-600">${ev.place}</p>
-      <img src="${ev.image || 'https://via.placeholder.com/150'}" alt="${ev.title}" class="w-full h-auto object-cover rounded mb-3">
-      <button class="mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
-        onclick="selectEvent(${ev.id})">
-        Таңдау
-      </button>
-    </div>
-  `;
-  eventList.appendChild(card);
-});
 
-function selectEvent(id) {
-  selectedEvent = events.find(e => e.id === id);
+function displayEvents() {
+  console.log("Функция displayEvents вызвана");
+  console.log("Массив events:", events);
+  eventListDiv.innerHTML = "";
+  if (!events || events.length === 0) {
+      console.warn("Массив events пуст или не определен!");
+      eventListDiv.innerHTML = "<p class='text-center text-red-500 col-span-full'>Мероприятия не найдены. Проверьте массив events в app.js</p>"; // col-span-full для grid
+      return;
+  }
+  events.forEach(ev => {
+    const card = document.createElement("div");
+    card.className = "bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ease-in-out overflow-hidden";
+    card.innerHTML = `
+      <img src="${ev.image || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="${ev.title}" class="w-full h-48 object-cover">
+      <div class="p-5">
+        <h3 class="text-xl font-semibold text-blue-700 mb-1">${ev.title}</h3>
+        <p class="text-sm text-gray-600 mb-3">${ev.place}</p>
+        <button class="w-full bg-blue-600 text-white py-2.5 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors"
+                onclick="handleEventSelection(${ev.id})">
+          Орындарды таңдау
+        </button>
+      </div>
+    `;
+    eventListDiv.appendChild(card);
+  });
+  console.log("Карточки мероприятий должны были быть добавлены в DOM.");
+}
+
+function handleEventSelection(eventId) {
+  console.log(`Выбрано мероприятие с ID: ${eventId}`);
+  selectedEvent = events.find(e => e.id === eventId);
+  if (!selectedEvent) {
+    console.error(`Мероприятие с ID ${eventId} не найдено в массиве events.`);
+    return;
+  }
+  console.log("Выбранное мероприятие:", selectedEvent);
+
   selectedSeats = [];
   bookedSeats = [];
-  eventTitle.textContent = selectedEvent.title + " | " + selectedEvent.place;
-  bookingSection.classList.remove("hidden");
 
-  // Fill date select
+  eventTitleH2.textContent = `${selectedEvent.title} | ${selectedEvent.place}`;
+  
   dateSelect.innerHTML = "";
-  dateList.forEach(date => {
+  dateList.forEach(dateStr => {
     const option = document.createElement("option");
-    option.value = date;
-    option.textContent = date;
+    option.value = dateStr;
+    option.textContent = formatDateDisplay(dateStr);
     dateSelect.appendChild(option);
   });
   selectedDate = dateList[0];
+  dateSelect.value = selectedDate;
+  timeSelect.value = selectedTime; // Устанавливаем значение по умолчанию
 
-  fetchBookedSeats();
+  eventListDiv.classList.add("hidden");
+  bookingSectionDiv.classList.remove("hidden");
+  
+  if (tg.MainButton) {
+    tg.MainButton.setText(`Брондау (${selectedSeats.length} орын)`);
+    tg.MainButton.show();
+    tg.MainButton.onClick(handleConfirmBookingViaTelegram); // Переименовал для ясности
+  } else {
+    console.warn("Telegram MainButton не доступен. tg.MainButton is undefined");
+  }
+
+
+  fetchBookedSeatsAndUpdateMap();
+  updateSelectedSeatsDisplay();
 }
+
+backToEventsBtn.onclick = () => {
+  bookingSectionDiv.classList.add("hidden");
+  eventListDiv.classList.remove("hidden");
+  if (tg.MainButton) {
+    tg.MainButton.hide();
+  }
+  selectedEvent = null;
+  console.log("Возврат к списку мероприятий.");
+};
 
 dateSelect.onchange = () => {
   selectedDate = dateSelect.value;
-  fetchBookedSeats();
+  console.log(`Дата изменена на: ${selectedDate}`);
+  selectedSeats = [];
+  fetchBookedSeatsAndUpdateMap();
+  updateSelectedSeatsDisplay();
 };
 timeSelect.onchange = () => {
   selectedTime = timeSelect.value;
-  fetchBookedSeats();
+  console.log(`Время изменено на: ${selectedTime}`);
+  selectedSeats = [];
+  fetchBookedSeatsAndUpdateMap();
+  updateSelectedSeatsDisplay();
 };
 
-function fetchBookedSeats() {
-  if (!selectedEvent || !selectedDate || !selectedTime) return;
+function fetchBookedSeatsAndUpdateMap() {
+  if (!selectedEvent || !selectedDate || !selectedTime) {
+    console.warn("fetchBookedSeats: Недостаточно данных (событие/дата/время не выбраны).", {selectedEvent, selectedDate, selectedTime});
+    seatTableBody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500">Іс-шара, күн және уақытты таңдаңыз.</td></tr>';
+    return;
+  }
 
-  const url = `${GOOGLE_SCRIPT_URL}?title=${encodeURIComponent(selectedEvent.title)}&date=${selectedDate}&time=${selectedTime}`;
+  seatTableBody.innerHTML = '<tr><td colspan="11" class="p-4 text-center text-gray-500">Орындар жүктелуде...</td></tr>';
+  const url = `${GOOGLE_SCRIPT_URL}?title=${encodeURIComponent(selectedEvent.title)}&date=${selectedDate}&time=${selectedTime}&cachebust=${new Date().getTime()}`;
+  console.log("Запрос забронированных мест по URL:", url);
+
   fetch(url)
-    .then(res => res.json())
+    .then(async response => { // Делаем response доступным для логирования
+        const responseText = await response.text(); // Читаем тело ответа как текст
+        console.log(`Ответ от Google Script (статус ${response.status}):`, responseText);
+        if (!response.ok) {
+            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Body: ${responseText}`);
+        }
+        try {
+            return JSON.parse(responseText); // Пытаемся парсить текст как JSON
+        } catch (e) {
+            console.error("Ошибка парсинга JSON от Google Script:", e, "Тело ответа:", responseText);
+            throw new Error("Не удалось разобрать ответ от сервера как JSON.");
+        }
+    })
     .then(data => {
-      bookedSeats = data.booked || [];
+      console.log("Разобранные данные от Google Script:", data);
+      if (data && Array.isArray(data.booked)) {
+        bookedSeats = data.booked;
+      } else {
+        console.warn("Ответ от Google Script не содержит ожидаемый массив 'booked'. Используется пустой массив. Получено:", data);
+        bookedSeats = [];
+      }
+      console.log("Обновленный массив bookedSeats:", bookedSeats);
       drawSeatMap();
     })
     .catch(err => {
-      console.error("Ошибка при получении занятых мест:", err);
+      console.error("Ошибка при получении или обработке занятых мест из Google Script:", err);
       bookedSeats = [];
-      drawSeatMap();
+      seatTableBody.innerHTML = `<tr><td colspan="11" class="p-4 text-center text-red-500">Орындарды жүктеу мүмкін болмады: ${err.message}. Қосымша ақпаратты консольдан қараңыз.</td></tr>`;
     });
 }
 
 function drawSeatMap() {
-  seatTable.innerHTML = "";
-  for (let row = 1; row <= 10; row++) {
-    const tr = document.createElement("tr");
-    const rowLabel = document.createElement("td");
-    rowLabel.textContent = `${row}-қатар`;
-    rowLabel.className = "p-1 font-medium bg-gray-100";
-    tr.appendChild(rowLabel);
+  console.log("drawSeatMap вызвана. Забронированные места:", bookedSeats);
+  seatTableBody.innerHTML = "";
+  const numRows = 10;
+  const numCols = 10;
 
-    for (let col = 1; col <= 10; col++) {
+  for (let row = 1; row <= numRows; row++) {
+    const tr = document.createElement("tr");
+    const rowLabelTd = document.createElement("td");
+    rowLabelTd.textContent = `${row}`;
+    rowLabelTd.className = "p-1 md:p-2 font-medium bg-gray-100 text-xs md:text-sm text-gray-700 sticky left-0 z-10";
+    tr.appendChild(rowLabelTd);
+
+    for (let col = 1; col <= numCols; col++) {
       const seatId = `${row}-қатар ${col}-орын`;
-      const td = document.createElement("td");
-      td.textContent = col;
+      const seatCell = document.createElement("td");
+      seatCell.textContent = col;
+      
+      let cellClasses = "p-1.5 md:p-2 border border-gray-300 text-xs md:text-sm text-center ";
+      // console.log(`Проверка места: ${seatId}. Есть в bookedSeats (${bookedSeats.length} шт.)?`, bookedSeats.includes(seatId)); // Детальное логгирование каждого места
 
       if (bookedSeats.includes(seatId)) {
-        td.className = "p-2 border bg-red-200 text-gray-500 text-sm cursor-not-allowed";
+        cellClasses += "seat-booked";
       } else {
-        td.className = "p-2 border cursor-pointer bg-gray-100 hover:bg-green-300 text-sm";
-        td.onclick = () => toggleSeat(td, seatId);
+        cellClasses += "seat-available cursor-pointer"; // hover:bg-green-200 - удалил, т.к. есть в <style>
+        if (selectedSeats.includes(seatId)) {
+          cellClasses += " seat-selected";
+        }
+        seatCell.onclick = () => handleSeatSelection(seatCell, seatId);
       }
-
-      tr.appendChild(td);
+      seatCell.className = cellClasses;
+      tr.appendChild(seatCell);
     }
-    seatTable.appendChild(tr);
+    seatTableBody.appendChild(tr);
   }
+  console.log("Карта мест отрисована.");
 }
 
-function toggleSeat(td, seatId) {
+function handleSeatSelection(seatCell, seatId) {
   const index = selectedSeats.indexOf(seatId);
   if (index > -1) {
     selectedSeats.splice(index, 1);
-    td.classList.remove("bg-green-500");
-    td.classList.add("bg-gray-100");
+    seatCell.classList.remove("seat-selected");
+    console.log(`Место ${seatId} отменено.`);
   } else {
     selectedSeats.push(seatId);
-    td.classList.remove("bg-gray-100");
-    td.classList.add("bg-green-500");
+    seatCell.classList.add("seat-selected");
+    console.log(`Место ${seatId} выбрано.`);
   }
+  updateSelectedSeatsDisplay();
 }
 
+function updateSelectedSeatsDisplay() {
+  selectedSeatsCountSpan.textContent = selectedSeats.length;
+  if (tg.MainButton) {
+    tg.MainButton.setText(`Брондау (${selectedSeats.length} орын)`);
+  }
+
+  if (selectedSeats.length === 0) {
+    selectedSeatsListSpan.textContent = "Ешқандай орын таңдалмады";
+    if (tg.MainButton) tg.MainButton.disable();
+    confirmBtn.disabled = true; // Также для HTML кнопки
+  } else {
+    selectedSeatsListSpan.textContent = selectedSeats.join(", ");
+    if (tg.MainButton) tg.MainButton.enable();
+    confirmBtn.disabled = false; // Также для HTML кнопки
+  }
+  console.log("Обновлено отображение выбранных мест:", selectedSeats);
+}
+
+// Для HTML кнопки
 confirmBtn.onclick = () => {
+    console.log("Нажата HTML кнопка 'Брондау'");
+    handleConfirmBookingViaTelegram(); // Вызываем ту же функцию, что и для Telegram кнопки
+};
+
+// Общая функция для отправки данных, используется и HTML кнопкой, и Telegram кнопкой
+function handleConfirmBookingViaTelegram() {
+  console.log("handleConfirmBookingViaTelegram вызвана. Выбранные места:", selectedSeats);
   if (!selectedEvent || selectedSeats.length === 0) {
-    alert("Кемінде бір орынды таңдаңыз");
+    const alertMsg = "Кемінде бір орынды таңдаңыз / Пожалуйста, выберите хотя бы одно место.";
+    console.warn(alertMsg);
+    if (tg.showAlert) {
+        tg.showAlert(alertMsg);
+    } else {
+        alert(alertMsg);
+    }
     return;
   }
 
-  const data = {
-    event: selectedEvent,
+  const dataToSend = {
+    event: { id: selectedEvent.id, title: selectedEvent.title, place: selectedEvent.place },
     seats: selectedSeats,
     date: selectedDate,
     time: selectedTime
   };
+  console.log("Отправка данных в Telegram:", dataToSend);
+  tg.sendData(JSON.stringify(dataToSend));
+}
 
-  tg.sendData(JSON.stringify(data));
-};
+function formatDateDisplay(dateString) {
+  const date = new Date(dateString);
+  const options = { year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString('kk-KZ', options);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  console.log("DOM полностью загружен и разобран. Инициализация приложения...");
+  displayEvents();
+  
+  if (tg.MainButton) {
+      tg.MainButton.setParams({ text: "Таңдауды растау", color: "#2563EB", textColor: "#FFFFFF" });
+      tg.MainButton.hide();
+      console.log("Главная кнопка Telegram настроена и скрыта.");
+  } else {
+      console.warn("Telegram WebApp API (tg.MainButton) не полностью доступно. Возможно, открыто не в Telegram WebApp.");
+  }
+  updateSelectedSeatsDisplay(); // Инициализируем состояние кнопок
+});
