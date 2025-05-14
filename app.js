@@ -1,6 +1,7 @@
-// app.js - Версия на основе вашего кода, с логированием и исправлениями
+// app.js - Версия с локальной отрисовкой мест
 
-const debugLogDiv = document.getElementById("debugLog");
+let debugLogDiv = null;
+
 function logDebug(message) {
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3 });
     const logMessage = `[${timestamp}] ${message}`;
@@ -13,7 +14,7 @@ function logDebug(message) {
     }
 }
 
-logDebug("app.js: Скрипт начал выполняться [UserVersionBase]");
+logDebug("app.js: Скрипт начал выполняться [LocalSeatsVersion]");
 
 let tg = null;
 try {
@@ -24,13 +25,15 @@ try {
       logDebug("tg.expand() успешно вызван.");
     } else {
       logDebug("ПРЕДУПРЕЖДЕНИЕ: Telegram WebApp API (window.Telegram.WebApp) НЕ НАЙДЕН!");
+      // Для локальной разработки без Telegram, можно добавить заглушку tg, как обсуждалось ранее.
     }
 } catch(e) {
     logDebug(`ОШИБКА при инициализации Telegram WebApp API: ${e.message}`);
 }
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqIxSIz5b-SjlMW3ZW4MSJTE5SRynLEruoodLvTYEhZYoq8ECpj3XiQ9_5OnjSiFhk/exec";
-logDebug(`GOOGLE_SCRIPT_URL: ${GOOGLE_SCRIPT_URL}`);
+// GOOGLE_SCRIPT_URL нам больше не нужен для получения мест, но может понадобиться для других целей в будущем.
+// const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyqIxSIz5b-SjlMW3ZW4MSJTE5SRynLEruoodLvTYEhZYoq8ECpj3XiQ9_5OnjSiFhk/exec";
+// logDebug(`GOOGLE_SCRIPT_URL: ${GOOGLE_SCRIPT_URL}`); // Закомментировано
 
 const events = [
   { id: 1, title: "«Абай» операсы", place: "С.Сейфуллин атындағы қазақ драма театры", image: "https://raw.githubusercontent.com/Aibynz/Tiketon/refs/heads/main/image1.jpg" },
@@ -52,12 +55,12 @@ const dateList = (() => {
 logDebug(`Массив dateList сгенерирован, количество: ${dateList.length}`);
 
 let selectedEvent = null;
-let selectedSeats = [];
+let selectedSeats = []; // Выбранные пользователем места
 let selectedDate = "";
 let selectedTime = "16:00";
-let bookedSeats = [];
+// let bookedSeats = []; // Эту переменную мы больше не будем заполнять извне для отрисовки
 
-// DOM Элементы - будем инициализировать в DOMContentLoaded
+// DOM Элементы
 let eventList, bookingSection, eventTitle, seatTable, confirmBtn, dateSelect, timeSelect, backToEventsBtn;
 
 function initializeDOMElements() {
@@ -69,12 +72,94 @@ function initializeDOMElements() {
     confirmBtn = document.getElementById("confirmBtn");
     dateSelect = document.getElementById("dateSelect");
     timeSelect = document.getElementById("timeSelect");
-    backToEventsBtn = document.getElementById("backToEventsBtn"); // Для кнопки "Назад"
+    backToEventsBtn = document.getElementById("backToEventsBtn");
 
     if (!eventList) logDebug("ОШИБКА: eventList не найден!"); else logDebug("eventList найден.");
     if (!bookingSection) logDebug("ОШИБКА: bookingSection не найден!"); else logDebug("bookingSection найден.");
-    // ... и т.д. для других элементов
+    if (!eventTitle) logDebug("ОШИБКА: eventTitle не найден!"); else logDebug("eventTitle найден.");
+    if (!seatTable) logDebug("ОШИБКА: seatTable tbody не найден!"); else logDebug("seatTable tbody найден.");
+    if (!confirmBtn) logDebug("ОШИБКА: confirmBtn не найден!"); else logDebug("confirmBtn найден.");
+    if (!dateSelect) logDebug("ОШИБКА: dateSelect не найден!"); else logDebug("dateSelect найден.");
+    if (!timeSelect) logDebug("ОШИБКА: timeSelect не найден!"); else logDebug("timeSelect найден.");
+    if (!backToEventsBtn) logDebug("ОШИБКА: backToEventsBtn не найден!"); else logDebug("backToEventsBtn найден.");
     logDebug("initializeDOMElements: Завершение инициализации DOM элементов.");
+}
+
+function setupEventHandlers() {
+    logDebug("setupEventHandlers: Начало установки обработчиков событий.");
+    if (dateSelect) {
+        dateSelect.onchange = () => {
+          selectedDate = dateSelect.value;
+          logDebug(`dateSelect.onchange: Дата изменена на ${selectedDate}`);
+          // Просто перерисовываем карту мест. selectedSeats сохраняются.
+          // Если вы хотите, чтобы при смене даты/времени сбрасывались выбранные места:
+          // selectedSeats = [];
+          drawSeatMap();
+        };
+        logDebug("Обработчик dateSelect.onchange установлен.");
+    }
+
+    if (timeSelect) {
+        timeSelect.onchange = () => {
+          selectedTime = timeSelect.value;
+          logDebug(`timeSelect.onchange: Время изменено на ${selectedTime}`);
+          // Аналогично, просто перерисовываем карту.
+          // Если вы хотите, чтобы при смене даты/времени сбрасывались выбранные места:
+          // selectedSeats = [];
+          drawSeatMap();
+        };
+        logDebug("Обработчик timeSelect.onchange установлен.");
+    }
+
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+          logDebug("confirmBtn.onclick: Нажата кнопка 'Брондау'");
+          if (!selectedEvent || selectedSeats.length === 0) {
+            alert("Кемінде бір орынды таңдаңыз");
+            logDebug("confirmBtn.onclick: Предупреждение - не выбрано мероприятие или места.");
+            return;
+          }
+          const data = {
+            event: selectedEvent, // Отправляем весь объект selectedEvent
+            seats: selectedSeats,
+            date: selectedDate,
+            time: selectedTime,
+            // userId: tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user.id : 'unknown_user' // Для передачи ID пользователя в Airtable
+          };
+          logDebug(`confirmBtn.onclick: Отправка данных в Telegram: ${JSON.stringify(data)}`);
+          if (tg && tg.sendData) {
+              try {
+                  tg.sendData(JSON.stringify(data));
+                  logDebug("confirmBtn.onclick: tg.sendData вызвана успешно.");
+                  // Опционально: после успешной отправки можно сбросить состояние или показать сообщение
+                  // selectedSeats = [];
+                  // drawSeatMap(); // Обновить карту
+                  // alert("Брондау туралы ақпарат жіберілді!");
+              } catch (e) {
+                  logDebug(`ОШИБКА confirmBtn.onclick при вызове tg.sendData: ${e.message}`);
+                  alert("Не удалось отправить данные. Ошибка API Telegram.");
+              }
+          } else {
+              logDebug("ОШИБКА confirmBtn.onclick: tg.sendData не доступна!");
+              alert("Не удалось отправить данные. Telegram API не доступно. (Для локальной проверки данные выведены в консоль)");
+              console.log("Данные для отправки (локально):", data); // Для отладки без Telegram
+          }
+        };
+        logDebug("Обработчик confirmBtn.onclick установлен.");
+    }
+
+    if (backToEventsBtn) {
+        backToEventsBtn.onclick = () => {
+            logDebug("backToEventsBtn.onclick: Нажата кнопка 'Назад к мероприятиям'");
+            if (bookingSection) bookingSection.classList.add("fully-hidden");
+            if (eventList) eventList.classList.remove("fully-hidden");
+            selectedEvent = null;
+            selectedSeats = []; // Сбрасываем выбранные места при возврате к списку
+            logDebug("backToEventsBtn.onclick: Возврат к списку мероприятий, состояние сброшено.");
+        };
+        logDebug("Обработчик backToEventsBtn.onclick установлен.");
+    }
+    logDebug("setupEventHandlers: Завершение установки обработчиков событий.");
 }
 
 function displayEvents() {
@@ -83,7 +168,7 @@ function displayEvents() {
         logDebug("ОШИБКА: displayEvents - eventList не инициализирован!");
         return;
     }
-    eventList.innerHTML = ""; // Очистка перед добавлением
+    eventList.innerHTML = "";
     events.forEach(ev => {
         const card = document.createElement("div");
         card.className = "bg-white border border-gray-200 rounded-lg shadow hover:shadow-lg transition";
@@ -91,7 +176,7 @@ function displayEvents() {
           <div class="p-4">
             <h3 class="text-lg font-bold text-blue-800">${ev.title}</h3>
             <p class="text-sm text-gray-600">${ev.place}</p>
-            <img src="${ev.image || 'https://via.placeholder.com/150'}" alt="${ev.title}" class="w-full h-auto object-cover rounded mb-3">
+            <img src="${ev.image || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="${ev.title}" class="w-full h-auto object-cover rounded mb-3">
             <button class="event-select-btn mt-3 w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700" data-event-id="${ev.id}">
               Таңдау
             </button>
@@ -100,7 +185,6 @@ function displayEvents() {
         eventList.appendChild(card);
     });
 
-    // Привязываем обработчики после добавления элементов в DOM
     document.querySelectorAll('.event-select-btn').forEach(button => {
         button.addEventListener('click', function() {
             const eventId = parseInt(this.getAttribute('data-event-id'));
@@ -108,7 +192,7 @@ function displayEvents() {
             selectEvent(eventId);
         });
     });
-    logDebug(`displayEvents: Мероприятия (${eventList.children.length} шт.) отображены. HTML eventList (начало): ${eventList.innerHTML.substring(0,100)}...`);
+    logDebug(`displayEvents: Мероприятия (${eventList.children.length} шт.) отображены.`);
 }
 
 function selectEvent(id) {
@@ -116,123 +200,96 @@ function selectEvent(id) {
   selectedEvent = events.find(e => e.id === id);
   if (!selectedEvent) {
       logDebug(`ОШИБКА selectEvent: Мероприятие с ID ${id} не найдено!`);
+      alert(`Қате: ID ${id} бар іс-шара табылмады.`);
       return;
   }
-  selectedSeats = [];
-  bookedSeats = [];
+  selectedSeats = []; // Сбрасываем выбранные места при выборе нового мероприятия
+  // bookedSeats = []; // Эту переменную мы больше не используем для состояния
 
   if (eventTitle) eventTitle.textContent = selectedEvent.title + " | " + selectedEvent.place;
-  else logDebug("ОШИБКА selectEvent: eventTitle не найден!");
-
-  if (eventList) eventList.classList.add("fully-hidden"); // Скрываем список мероприятий
-  else logDebug("ОШИБКА selectEvent: eventList не найден для скрытия!");
-  if (bookingSection) bookingSection.classList.remove("fully-hidden"); // Показываем секцию бронирования
-  else logDebug("ОШИБКА selectEvent: bookingSection не найден для отображения!");
-
+  if (eventList) eventList.classList.add("fully-hidden");
+  if (bookingSection) bookingSection.classList.remove("fully-hidden");
 
   if (dateSelect) {
       dateSelect.innerHTML = "";
       dateList.forEach(date => {
         const option = document.createElement("option");
         option.value = date;
-        // Для отображения можно форматировать, но ваш код просто выводил date
-        option.textContent = date; // formatDateDisplay(date); 
+        option.textContent = formatDateDisplay(date);
         dateSelect.appendChild(option);
       });
       if (dateList.length > 0) {
         selectedDate = dateList[0];
         dateSelect.value = selectedDate;
+        logDebug(`selectEvent: Дата по умолчанию установлена на ${selectedDate}`);
       }
-  } else { logDebug("ОШИБКА selectEvent: dateSelect не найден!"); }
-  
-  if (timeSelect) timeSelect.value = selectedTime; // Устанавливаем время по умолчанию
-
-  logDebug(`selectEvent: Перед fetchBookedSeats. Дата: ${selectedDate}, Время: ${selectedTime}`);
-  fetchBookedSeats();
-}
-
-if (typeof dateSelect !== 'undefined' && dateSelect) { // Проверяем, что переменная определена, а не только элемент
-    dateSelect.onchange = () => {
-      selectedDate = dateSelect.value;
-      logDebug(`dateSelect.onchange: Дата изменена на ${selectedDate}`);
-      fetchBookedSeats();
-    };
-}
-
-if (typeof timeSelect !== 'undefined' && timeSelect) {
-    timeSelect.onchange = () => {
-      selectedTime = timeSelect.value;
-      logDebug(`timeSelect.onchange: Время изменено на ${selectedTime}`);
-      fetchBookedSeats();
-    };
-}
-
-function fetchBookedSeats() {
-  logDebug(`WorkspaceBookedSeats: Начало. Мероприятие: ${selectedEvent ? selectedEvent.title : 'null'}, Дата: ${selectedDate}, Время: ${selectedTime}`);
-  if (!selectedEvent || !selectedDate || !selectedTime) {
-      logDebug("fetchBookedSeats: Недостаточно данных для запроса.");
-      if (seatTable) seatTable.innerHTML = '<tr><td colspan="11" class="text-center p-4">Іс-шара, күн және уақытты таңдаңыз.</td></tr>';
-      return;
   }
-  if (!seatTable) { logDebug("ОШИБКА fetchBookedSeats: seatTable не найден!"); return;}
-
-  seatTable.innerHTML = '<tr><td colspan="11" class="text-center p-4">Орындар жүктелуде...</td></tr>';
-  const url = `${GOOGLE_SCRIPT_URL}?title=${encodeURIComponent(selectedEvent.title)}&date=${selectedDate}&time=${selectedTime}&cachebust=${new Date().getTime()}`;
-  logDebug(`WorkspaceBookedSeats: Запрос URL: ${url}`);
-
-  fetch(url)
-    .then(response => {
-        logDebug(`WorkspaceBookedSeats: Получен ответ от сервера, статус: ${response.status}`);
-        if (!response.ok) {
-            throw new Error(`Сетевая ошибка: ${response.status} ${response.statusText}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-      logDebug(`WorkspaceBookedSeats: Данные от сервера (JSON): ${JSON.stringify(data)}`);
-      bookedSeats = data.booked || [];
-      drawSeatMap();
-    })
-    .catch(err => {
-      logDebug(`ОШИБКА fetchBookedSeats: ${err.message}. URL: ${url}`);
-      console.error("Ошибка при получении занятых мест:", err);
-      bookedSeats = [];
-      if (seatTable) seatTable.innerHTML = `<tr><td colspan="11" class="text-center p-4 text-red-500">Орындарды жүктеу мүмкін болмады: ${err.message}</td></tr>`;
-      drawSeatMap(); // Отрисовываем пустую карту или карту без забронированных мест
-    });
+  
+  if (timeSelect) {
+      timeSelect.value = selectedTime; // selectedTime уже имеет значение "16:00" по умолчанию
+      logDebug(`selectEvent: Время по умолчанию установлено на ${timeSelect.value}`);
+  }
+  
+  logDebug(`selectEvent: Перед drawSeatMap. Мероприятие: "${selectedEvent.title}", Дата: ${selectedDate}, Время: ${selectedTime}`);
+  // Вместо fetchBookedSeats(), просто рисуем карту
+  drawSeatMap();
 }
+
+
+// ЭТА ФУНКЦИЯ БОЛЬШЕ НЕ НУЖНА В ТАКОМ ВИДЕ
+/*
+function fetchBookedSeats() {
+  logDebug(`WorkspaceBookedSeats: Начало. Мероприятие: ${selectedEvent ? selectedEvent.title : 'N/A'}, Дата: ${selectedDate}, Время: ${selectedTime}`);
+  // ... старый код fetch ...
+  // Теперь мы просто вызываем drawSeatMap() из обработчиков onchange для dateSelect и timeSelect,
+  // и из selectEvent().
+}
+*/
 
 function drawSeatMap() {
-  logDebug(`drawSeatMap: Начало отрисовки. Забронированные места: ${JSON.stringify(bookedSeats)}`);
-  if (!seatTable) { logDebug("ОШИБКА drawSeatMap: seatTable не найден!"); return;}
-  seatTable.innerHTML = "";
-  for (let row = 1; row <= 10; row++) {
+  logDebug(`drawSeatMap: Начало отрисовки. Выбранные места: ${JSON.stringify(selectedSeats)}`);
+  if (!seatTable) {
+    logDebug("ОШИБКА drawSeatMap: seatTable не найден!");
+    return;
+  }
+  seatTable.innerHTML = ""; // Очищаем предыдущую карту
+
+  if (!selectedEvent) { // Если мероприятие не выбрано (например, при первом заходе или ошибке)
+      seatTable.innerHTML = '<tr><td colspan="11" class="text-center p-4">Алдымен іс-шараны таңдаңыз.</td></tr>';
+      logDebug("drawSeatMap: Мероприятие не выбрано, карта не отрисована.");
+      return;
+  }
+
+  for (let row = 1; row <= 10; row++) { // Предположим, у нас всегда 10 рядов
     const tr = document.createElement("tr");
     const rowLabel = document.createElement("td");
     rowLabel.textContent = `${row}-қатар`;
-    rowLabel.className = "p-1 font-medium bg-gray-100";
+    rowLabel.className = "p-1 font-medium bg-gray-100 text-xs md:text-sm sticky left-0 z-10"; // Сделаем метку ряда "липкой"
     tr.appendChild(rowLabel);
 
-    for (let col = 1; col <= 10; col++) {
+    for (let col = 1; col <= 10; col++) { // И 10 мест в каждом ряду
       const seatId = `${row}-қатар ${col}-орын`;
       const td = document.createElement("td");
       td.textContent = col;
 
-      if (bookedSeats.includes(seatId)) {
-        td.className = "p-2 border bg-red-200 text-gray-500 text-sm cursor-not-allowed";
+      const isSelected = selectedSeats.includes(seatId);
+
+      td.className = "p-2 border text-center text-xs md:text-sm cursor-pointer hover:bg-green-300";
+
+      if (isSelected) {
+          td.classList.add("bg-green-500", "text-white");
+          td.title = "Таңдалған орын";
       } else {
-        td.className = "p-2 border cursor-pointer bg-gray-100 hover:bg-green-300 text-sm";
-        if (selectedSeats.includes(seatId)) { // Подсвечиваем уже выбранные при перерисовке
-            td.classList.remove("bg-gray-100");
-            td.classList.add("bg-green-500");
-        }
-        td.onclick = () => toggleSeat(td, seatId);
+          td.classList.add("bg-gray-100");
+          td.title = "Орынды таңдау";
       }
+      // Все места кликабельны, так как мы не учитываем "забронированные" с сервера
+      td.onclick = () => toggleSeat(td, seatId);
       tr.appendChild(td);
     }
     seatTable.appendChild(tr);
   }
-  logDebug("drawSeatMap: Карта мест отрисована.");
+  logDebug("drawSeatMap: Карта мест отрисована со всеми доступными местами.");
 }
 
 function toggleSeat(td, seatId) {
@@ -240,79 +297,61 @@ function toggleSeat(td, seatId) {
   const index = selectedSeats.indexOf(seatId);
   if (index > -1) {
     selectedSeats.splice(index, 1);
-    td.classList.remove("bg-green-500");
-    td.classList.add("bg-gray-100"); // Возвращаем стиль доступного
+    td.classList.remove("bg-green-500", "text-white");
+    td.classList.add("bg-gray-100", "hover:bg-green-300");
+    td.title = "Орынды таңдау";
     logDebug(`Место ${seatId} отменено. Выбрано: ${selectedSeats.length}`);
   } else {
     selectedSeats.push(seatId);
     td.classList.remove("bg-gray-100");
-    td.classList.add("bg-green-500"); // Стиль выбранного
+    td.classList.add("bg-green-500", "text-white");
+    td.title = "Таңдалған орын";
     logDebug(`Место ${seatId} выбрано. Выбрано: ${selectedSeats.length}`);
   }
+  // Можно добавить обновление информации о количестве выбранных мест где-то на странице, если нужно
+  // updateSelectedCountDisplay(); 
 }
 
-if (typeof confirmBtn !== 'undefined' && confirmBtn) {
-    confirmBtn.onclick = () => {
-      logDebug("confirmBtn.onclick: Нажата кнопка 'Брондау'");
-      if (!selectedEvent || selectedSeats.length === 0) {
-        alert("Кемінде бір орынды таңдаңыз");
-        return;
-      }
-      const data = {
-        event: selectedEvent, // Отправляем весь объект selectedEvent
-        seats: selectedSeats,
-        date: selectedDate,
-        time: selectedTime
-      };
-      logDebug(`confirmBtn.onclick: Отправка данных в Telegram: ${JSON.stringify(data)}`);
-      if (tg && tg.sendData) {
-          tg.sendData(JSON.stringify(data));
-      } else {
-          logDebug("ОШИБКА: tg.sendData не доступна!");
-          alert("Не удалось отправить данные. Telegram API не доступно.");
-      }
-    };
+function formatDateDisplay(dateStringISO) {
+  const date = new Date(dateStringISO);
+  const userTimezoneOffset = date.getTimezoneOffset() * 60000;
+  const dateInLocal = new Date(date.getTime() + userTimezoneOffset);
+  return dateInLocal.toLocaleDateString('kk-KZ', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-// Кнопка "Назад" (если вы ее добавили в HTML)
-if (typeof backToEventsBtn !== 'undefined' && backToEventsBtn) {
-    backToEventsBtn.onclick = () => {
-        logDebug("backToEventsBtn.onclick: Нажата кнопка 'Назад к мероприятиям'");
-        if (bookingSection) bookingSection.classList.add("fully-hidden");
-        if (eventList) eventList.classList.remove("fully-hidden");
-        selectedEvent = null; // Сбрасываем выбранное мероприятие
-    };
-}
-
-
-// Функция форматирования даты (если нужна для отображения в selectEvent)
-// function formatDateDisplay(dateString) {
-//   const date = new Date(dateString);
-//   return date.toLocaleDateString('kk-KZ', { year: 'numeric', month: 'long', day: 'numeric' });
-// }
-
-
-// Инициализация после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
+  debugLogDiv = document.getElementById("debugLog");
+  if (debugLogDiv) logDebug("DOMContentLoaded: debugLogDiv успешно найден и инициализирован.");
+  else console.log("ОШИБКА DOMContentLoaded: debugLogDiv НЕ НАЙДЕН! Логи будут только в консоли.");
+
   logDebug("DOMContentLoaded: DOM полностью загружен и готов.");
-  globalDebugLogDiv = document.getElementById("debugLog"); // Инициализируем здесь
-  if (globalDebugLogDiv) logDebug("DOMContentLoaded: globalDebugLogDiv найден.");
-  else logDebug("ОШИБКА DOMContentLoaded: globalDebugLogDiv НЕ НАЙДЕН!");
 
-  initializeDOMElements(); // Инициализируем ссылки на DOM элементы
+  initializeDOMElements();
+  setupEventHandlers();
 
-  if (eventList) { // Проверяем, что eventList найден перед вызовом displayEvents
-    displayEvents();   // Отображаем мероприятия
+  if (eventList) {
+    displayEvents();
   } else {
     logDebug("ОШИБКА DOMContentLoaded: eventList не найден, displayEvents не будет вызвана!");
   }
   
-  // Настройка кнопок Telegram (если API доступно)
   if (tg && tg.MainButton) {
       try {
-        tg.MainButton.setParams({ text: "Таңдауды растау", color: "#2563EB", textColor: "#FFFFFF" });
-        tg.MainButton.hide();
-        logDebug("DOMContentLoaded: Главная кнопка Telegram настроена и скрыта.");
+        // Пока что сделаем кнопку Telegram видимой, но не активной, если ничего не выбрано
+        // Активность кнопки можно будет менять в toggleSeat или при проверке в confirmBtn
+        tg.MainButton.setParams({ text: "Таңдауды растау", color: "#2563EB", textColor: "#FFFFFF", is_visible: true, is_active: false });
+        logDebug("DOMContentLoaded: Главная кнопка Telegram настроена.");
+        
+        // Можно сделать так, чтобы MainButton дублировала нажатие вашей кнопки "Брондау"
+        // tg.MainButton.onClick(function() {
+        //    if (confirmBtn) {
+        //        logDebug("Telegram MainButton clicked, simulating click on confirmBtn");
+        //        confirmBtn.click(); // Вызываем клик на вашей HTML-кнопке
+        //    } else {
+        //        logDebug("Telegram MainButton clicked, but confirmBtn not found");
+        //    }
+        // });
+
       } catch (e) {
         logDebug(`ОШИБКА DOMContentLoaded при настройке tg.MainButton: ${e.message}`);
       }
@@ -323,3 +362,32 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 logDebug("app.js: Скрипт завершил выполнение своего первичного (синхронного) кода.");
+
+// Опциональная функция для управления активностью кнопки Telegram
+function updateTelegramMainButtonState() {
+    if (tg && tg.MainButton) {
+        if (selectedEvent && selectedSeats.length > 0) {
+            tg.MainButton.setParams({ is_active: true });
+            logDebug("Telegram MainButton стала активной.");
+        } else {
+            tg.MainButton.setParams({ is_active: false });
+            logDebug("Telegram MainButton стала НЕ активной.");
+        }
+    }
+}
+
+// Вызывайте updateTelegramMainButtonState() после каждого изменения selectedSeats:
+// в toggleSeat:
+// ...
+//   logDebug(`Место ${seatId} выбрано. Выбрано: ${selectedSeats.length}`);
+// }
+// updateTelegramMainButtonState(); // <-- Добавить сюда
+
+// И при сбросе selectedSeats:
+// в selectEvent:
+// selectedSeats = [];
+// updateTelegramMainButtonState(); // <-- Добавить сюда
+
+// в backToEventsBtn.onclick:
+// selectedSeats = [];
+// updateTelegramMainButtonState(); // <-- Добавить сюда
