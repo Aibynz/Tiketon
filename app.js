@@ -339,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         // Пока что сделаем кнопку Telegram видимой, но не активной, если ничего не выбрано
         // Активность кнопки можно будет менять в toggleSeat или при проверке в confirmBtn
-        tg.MainButton.setParams({ text: "Таңдауды растау", color: "#2563EB", textColor: "#FFFFFF", is_visible: true, is_active: false });
+        tg.MainButton.setParams({ text: "Таңдауды растау", color: "#2563EB", textColor: "#FFFFFF", is_visible: false, is_active: false });
         logDebug("DOMContentLoaded: Главная кнопка Telegram настроена.");
         
         // Можно сделать так, чтобы MainButton дублировала нажатие вашей кнопки "Брондау"
