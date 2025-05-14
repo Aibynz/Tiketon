@@ -335,28 +335,38 @@ document.addEventListener('DOMContentLoaded', () => {
     logDebug("ОШИБКА DOMContentLoaded: eventList не найден, displayEvents не будет вызвана!");
   }
   
-  if (tg && tg.MainButton) {
-      try {
-        // Пока что сделаем кнопку Telegram видимой, но не активной, если ничего не выбрано
-        // Активность кнопки можно будет менять в toggleSeat или при проверке в confirmBtn
-        tg.MainButton.setParams({ text: "Таңдауды растау", color: "#2563EB", textColor: "#FFFFFF", is_visible: false, is_active: false });
-        logDebug("DOMContentLoaded: Главная кнопка Telegram настроена.");
-        
-        // Можно сделать так, чтобы MainButton дублировала нажатие вашей кнопки "Брондау"
-        // tg.MainButton.onClick(function() {
-        //    if (confirmBtn) {
-        //        logDebug("Telegram MainButton clicked, simulating click on confirmBtn");
-        //        confirmBtn.click(); // Вызываем клик на вашей HTML-кнопке
-        //    } else {
-        //        logDebug("Telegram MainButton clicked, but confirmBtn not found");
-        //    }
-        // });
+  if (tg) { // Сначала проверяем, что tg вообще существует
+      if (tg.MainButton) { // Затем проверяем MainButton
+          try {
+            // Вы можете настроить параметры, если хотите (они могут пригодиться, если вы ее потом покажете)
+            tg.MainButton.setParams({ 
+                text: "Таңдауды растау", 
+                color: "#2563EB", 
+                textColor: "#FFFFFF", 
+                // is_visible: true, // Можно убрать или оставить, hide() переопределит
+                is_active: false 
+            });
+            tg.MainButton.hide(); // <--- СКРЫВАЕМ КНОПКУ
+            logDebug("DOMContentLoaded: Главная кнопка Telegram настроена и СКРЫТА.");
+            
+            // Обработчик tg.onEvent('mainButtonClicked', ...) можно тоже закомментировать или удалить,
+            // так как скрытая кнопка не будет нажиматься.
+            /*
+            tg.onEvent('mainButtonClicked', function(){
+                // ...
+            });
+            */
 
-      } catch (e) {
-        logDebug(`ОШИБКА DOMContentLoaded при настройке tg.MainButton: ${e.message}`);
+          } catch (e) {
+            logDebug(`ОШИБКА DOMContentLoaded при настройке tg.MainButton: ${e.message}`);
+          }
+      } else {
+          logDebug("ПРЕДУПРЕЖДЕНИЕ DOMContentLoaded: tg.MainButton не доступен.");
       }
+      tg.ready(); 
+      logDebug("tg.ready() шақырылды.");
   } else {
-      logDebug("ПРЕДУПРЕЖДЕНИЕ DOMContentLoaded: tg.MainButton не доступен.");
+      logDebug("ПРЕДУПРЕЖДЕНИЕ DOMContentLoaded: Telegram API (tg) не доступен.");
   }
   logDebug("DOMContentLoaded: Инициализация приложения завершена.");
 });
